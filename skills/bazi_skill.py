@@ -17,43 +17,15 @@ class BaziSkill(BaseSkill):
         )
         self.bazi_path = bazi_path
         self.crushes_path = crushes_path
-        self._llm = None
+        self.temperature = 0.3
         
         # 预加载参考文献
         self.references = self._load_references()
 
-    @property
-    def llm(self):
-        if self._llm is None:
-            # 统一配置入口
-            from dotenv import load_dotenv
-            load_dotenv()
-            
-            self.api_key = os.getenv("OPENAI_API_KEY", "")
-            self.api_base = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
-            self.model_name = os.getenv("BAZI_MODEL", os.getenv("MODEL_NAME", "gpt-4o"))
-            
-            from langchain_openai import ChatOpenAI
-            self._llm = ChatOpenAI(
-                model=self.model_name,
-                api_key=self.api_key,
-                base_url=self.api_base,
-                temperature=0.3
-            )
-        return self._llm
-
     def _call_llm(self, prompt: str) -> str:
-        """调用大语言模型 API (via LangChain)"""
-        try:
-            from langchain_core.messages import HumanMessage
-            response = self.llm.invoke([HumanMessage(content=prompt)])
-            content = response.content
-            if isinstance(content, list):
-                return "".join([c.get("text", "") for c in content if isinstance(c, dict) and "text" in c])
-            return str(content)
-        except Exception as e:
-            print(f"[!] LLM API Error via LangChain: {e}")
-            raise e
+        """调用大语言模型 API"""
+        from langchain_core.messages import HumanMessage
+        return self._call_llm_robust([HumanMessage(content=prompt)])
 
     def _load_references(self) -> str:
         """加载所有参考典籍内容"""

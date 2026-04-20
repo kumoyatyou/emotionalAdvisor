@@ -13,27 +13,11 @@ class NuwaSkill(BaseSkill):
             description="基于思维模型的角色蒸馏对话技能"
         )
         self.nuwa_path = nuwa_path
+        self.temperature = float(os.getenv("TEMPERATURE", 0.3))
         
-        self._llm = None
         self.personas: Dict[str, str] = {}
         self.contexts: Dict[str, List[Dict[str, str]]] = {}
         self._load_all_personas()
-
-    @property
-    def llm(self):
-        if self._llm is None:
-            from langchain_openai import ChatOpenAI
-            model_name = (os.getenv("NUWA_MODEL") or os.getenv("MODEL_NAME", "gpt-4o")).strip()
-            api_key = os.getenv("OPENAI_API_KEY")
-            base_url = os.getenv("OPENAI_API_BASE")
-            temperature = float(os.getenv("TEMPERATURE", 0.3)) # 思维模型建议低采样
-            self._llm = ChatOpenAI(
-                model=model_name,
-                openai_api_key=api_key,
-                openai_api_base=base_url,
-                temperature=temperature
-            )
-        return self._llm
 
     def _load_all_personas(self):
         """扫描 examples 目录并加载所有的思维模型（SKILL.md）"""
@@ -127,8 +111,8 @@ class NuwaSkill(BaseSkill):
 """
         try:
             # 使用同步的 llm invoke，因为这个过程不一定在 event loop 里
-            response = self.llm.invoke([{"role": "user", "content": prompt}])
-            result = response.content
+            from langchain_core.messages import HumanMessage
+            result = self._call_llm_robust([HumanMessage(content=prompt)])
             
             # 保存到 user_profile/profile.md
             user_profile_path = os.path.join("user_profile", "profile.md")

@@ -16,64 +16,13 @@ class SimpSkill(BaseSkill):
         )
         self.path = simp_skill_path
         self.crushes_path = crushes_path
-        self._llm = None
+        self.temperature = float(os.getenv("TEMPERATURE", 0.7))
         self.prompts = self._load_prompts()
         
         # 将 simp-skill 的 tools 目录加入系统路径，以便调用其中的解析器
         self.tools_path = os.path.join(self.path, "tools")
         if self.tools_path not in sys.path:
             sys.path.insert(0, self.tools_path)
-
-    @property
-    def llm(self):
-        if self._llm is None:
-            from langchain_openai import ChatOpenAI
-            self.model_name = (os.getenv("SIMP_MODEL") or os.getenv("MODEL_NAME", "gpt-4o")).strip()
-            self.api_key = os.getenv("OPENAI_API_KEY")
-            self.base_url = os.getenv("OPENAI_API_BASE")
-            self.temperature = float(os.getenv("TEMPERATURE", 0.7))
-
-            self._llm = ChatOpenAI(
-                model=self.model_name,
-                openai_api_key=self.api_key,
-                openai_api_base=self.base_url,
-                temperature=self.temperature,
-                max_retries=2
-            )
-        return self._llm
-
-    def _call_llm_robust(self, messages: List[Any]) -> str:
-        """健壮的 LLM 调用，如果 LangChain 失败，尝试极简原生调用"""
-        try:
-            return self.llm.invoke(messages).content
-        except Exception as e:
-            print(f"[*] LangChain failed: {e}")
-            print(f"[*] Attempting ultra-minimal native call to {self.model_name}...")
-            
-            from openai import OpenAI
-            # 确保 API Key 和 Base URL 干净
-            client = OpenAI(api_key=self.api_key.strip(), base_url=self.base_url.strip())
-            
-            native_messages = []
-            for m in messages:
-                role = "user"
-                if hasattr(m, "type") and m.type == "system": role = "system"
-                native_messages.append({"role": role, "content": m.content})
-            
-            import json
-            with open("debug_native_payload.json", "w", encoding="utf-8") as f:
-                json.dump({"model": self.model_name, "messages": native_messages}, f, ensure_ascii=False)
-                
-            try:
-                # 极简调用：只传 model 和 messages，不传 temperature 等其他任何参数
-                resp = client.chat.completions.create(
-                    model=self.model_name,
-                    messages=native_messages
-                )
-                return resp.choices[0].message.content
-            except Exception as e2:
-                print(f"[!] Ultra-minimal call also failed: {e2}")
-                raise e2
 
     def _get_contact_paths(self, contact_id: str) -> Dict[str, str]:
         slug = str(contact_id).lower().replace(" ", "_") if contact_id else "unknown"
