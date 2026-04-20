@@ -1,7 +1,15 @@
 import os
 import time
+import threading
 from typing import List, Any
 from langchain_core.documents import Document
+
+# 预热 tiktoken 避免并发加载时的 RustBindingsAPI 线程安全 Bug
+try:
+    import tiktoken
+    tiktoken.get_encoding("cl100k_base")
+except Exception:
+    pass
 
 class KnowledgeBase:
     """
@@ -12,6 +20,7 @@ class KnowledgeBase:
         self._embeddings = None
         self._vector_db = None
         self._text_splitter = None
+        self.lock = threading.Lock()
 
     @property
     def embeddings(self):
@@ -74,12 +83,14 @@ class KnowledgeBase:
             return
             
         # 分批写入向量数据库，确保每批不超过 SiliconFlow 的限制 (64)
-        batch_size = 50
-        for i in range(0, len(split_docs), batch_size):
-            batch = split_docs[i : i + batch_size]
-            self.vector_db.add_documents(batch)
-            if i + batch_size < len(split_docs):
-                time.sleep(0.5) # 限流保护
+        # 使用锁保护 ChromaDB 的并发写入
+        with self.lock:
+            batch_size = 50
+            for i in range(0, len(split_docs), batch_size):
+                batch = split_docs[i : i + batch_size]
+                self.vector_db.add_documents(batch)
+                if i + batch_size < len(split_docs):
+                    time.sleep(0.5) # 限流保护
 
     def _purify_data(self, item: Any) -> str:
         """
@@ -107,4 +118,5 @@ class KnowledgeBase:
         if contact_id:
             search_kwargs["filter"] = {"contact_id": contact_id}
             
-        return self.vector_db.similarity_search(query_text, k=k, **search_kwargs)
+        with self.lock:
+            return self.vector_db.similarity_search(query_text, k=k, **search_kwargs)
