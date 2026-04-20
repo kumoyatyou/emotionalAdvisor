@@ -73,7 +73,12 @@ WECHAT_SYNC_URL=http://127.0.0.1:5031/api/v1/push/messages
 WECHAT_SYNC_TOKEN=your_weflow_token_here
 ```
 
-### 3. 启动 Agent
+### 3. 手动导入历史聊天记录（强烈建议）
+为了防止首次启动时自动同步历史记录不完全，**强烈建议在首次运行前**，手动导入与目标联系人的历史聊天记录：
+1. 使用 WeFlow 导出聊天记录，请务必选择 **JSON 格式**。
+2. 将导出的文件放入 `data/raw/` 目录下。系统会在启动后自动解析并构建性格档案。
+
+### 4. 启动 Agent
 在终端中运行主程序：
 
 ```bash
@@ -81,10 +86,6 @@ python main.py
 ```
 
 启动成功后，你将进入交互式控制台，并看到微信实时监听服务已在后台挂起。
-
-### 4. 手动导入历史聊天记录（可选）
-如果你不使用 WeFlow 的实时 API，或者希望对特定的历史记录进行分析，你可以将导出的聊天记录放入 `data/raw/` 目录下。
-**建议：** 使用 WeFlow 导出聊天记录时，请务必选择 **JSON 格式**，以便系统更准确地解析对话时间线和内容。
 
 ---
 
@@ -129,17 +130,9 @@ emotionalAdvisor/
 └── requirements.txt        # Python 依赖清单
 ```
 
-*(注意：`user_profile/`、`crushes/`、`data/raw/` 和 `db/` 等包含个人隐私的目录已被 `.gitignore` 排除，不会被提交到仓库中。)*
-
 ---
 
-## 🤝 贡献指南
-
-欢迎提交 Pull Request 或 Issue！如果你想开发新的技能插件，只需继承 `skills/base.py` 中的 `BaseSkill` 类，并在 `main.py` 的 `AIAgent` 中注册即可无缝接入自然语言调度系统。
-
----
-
-## � 致谢与声明 (Acknowledgements)
+## 🎉 致谢与声明 (Acknowledgements)
 
 本项目在开发过程中，深受开源社区的启发，并直接参考或集成了以下优秀的开源项目及理念，特此致谢。我们在使用和借鉴这些项目时，严格遵守了它们各自的开源许可协议：
 
@@ -152,6 +145,6 @@ emotionalAdvisor/
 
 ---
 
-## �� 许可证 (License)
+## 📜 许可证 (License)
 
 本项目采用 MIT 许可证。详见 [LICENSE](LICENSE) 文件。
