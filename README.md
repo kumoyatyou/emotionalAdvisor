@@ -55,11 +55,7 @@ pip install -r requirements.txt
 
 ### 2. 配置环境变量
 项目根目录提供了一个 `.env.example` 模板文件。
-复制该文件并重命名为 `.env`，然后填入你的 API 密钥：
-
-```bash
-cp .env.example .env
-```
+复制该文件并重命名为 `.env`，然后填入你的 API 密钥
 
 `.env` 配置示例：
 ```env
@@ -116,16 +112,16 @@ emotionalAdvisor/
 │   ├── knowledge_base.py   # Chroma 向量知识库 (RAG) 封装
 │   ├── wechat_sync.py      # WeFlow 微信本地接口与 SSE 监听
 │   └── async_bus.py        # 异步事件总线
+├── data/                   # 本地数据存储
+│   └── raw/                # 存放手动导出的历史聊天记录
 ├── skills/                 # 技能插件层
 │   ├── base.py             # Skill 抽象基类
 │   ├── simp_skill.py       # 核心情感分析与回复生成技能
 │   ├── nuwa_skill.py       # 角色思维模拟技能
 │   └── bazi_skill.py       # 命理推演技能
-├── user_profile/           # (本地生成) 用户的个人画像与档案
-├── crushes/                # (本地生成) 目标联系人独立性格档案
-├── data/                   # 本地数据存储
-│   └── raw/                # 存放手动导出的历史聊天记录 (已忽略提交)
-├── db/                     # (本地生成) Chroma 向量数据库文件
+├── user_profile/           # 用户的个人画像与档案
+├── crushes/                # 目标联系人独立性格档案
+├── db/                     # Chroma 向量数据库文件
 ├── main.py                 # 项目启动入口
 └── requirements.txt        # Python 依赖清单
 ```
@@ -148,3 +144,5 @@ emotionalAdvisor/
 ## 📜 许可证 (License)
 
 本项目采用 MIT 许可证。详见 [LICENSE](LICENSE) 文件。
+
+> *P.S. 你可以自由地复制、修改和分发这些代码，甚至完全不需要在你的项目中保留我的署名。毕竟，把“感情小丑”的经历四处声张确实有些难为情。只要这个工具能帮你避开我曾踩过的坑，那就足够了。祝你在爱里得偿所愿。*
