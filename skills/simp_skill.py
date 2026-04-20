@@ -74,7 +74,7 @@ class SimpSkill(BaseSkill):
                 raise e2
 
     def _get_contact_paths(self, contact_id: str) -> Dict[str, str]:
-        slug = contact_id.lower().replace(" ", "_")
+        slug = str(contact_id).lower().replace(" ", "_") if contact_id else "unknown"
         base = os.path.join(self.crushes_path, slug)
         return {
             "base": base,
@@ -245,6 +245,40 @@ class SimpSkill(BaseSkill):
             print(f"[!] Error analyzing photos: {e}")
         return ""
 
+    def _get_bazi_info(self, contact_id: str) -> str:
+        """读取双方的八字信息用于辅助策略生成"""
+        import json
+        user_bazi = ""
+        user_meta_path = os.path.join("user_profile", "meta.json")
+        if os.path.exists(user_meta_path):
+            try:
+                with open(user_meta_path, "r", encoding="utf-8") as f:
+                    u_meta = json.load(f)
+                    if u_meta.get("calculated_bazi"):
+                        user_bazi = u_meta.get("calculated_bazi")
+            except Exception:
+                pass
+                
+        target_bazi = ""
+        if contact_id and contact_id != "Unknown":
+            paths = self._get_contact_paths(contact_id)
+            if os.path.exists(paths["meta"]):
+                try:
+                    with open(paths["meta"], "r", encoding="utf-8") as f:
+                        t_meta = json.load(f)
+                        if t_meta.get("calculated_bazi"):
+                            target_bazi = t_meta.get("calculated_bazi")
+                except Exception:
+                    pass
+                    
+        if user_bazi and target_bazi:
+            return f"\n### 🔮 命理匹配参考 (Bazi Compatibility) ###\n- 我的八字：{user_bazi}\n- {contact_id}的八字：{target_bazi}\n[重要要求] 请务必结合双方的八字五行生克、性格特质，在你的分析和策略中提供一层中国传统命理学的深度参考建议（如合盘优劣、近期运势对关系的影响）。\n"
+        elif user_bazi:
+            return f"\n### 🔮 命理参考 (My Bazi) ###\n- 我的八字：{user_bazi}\n[要求] 可以结合我的八字命理特征给出更贴合我性格的建议。\n"
+        elif target_bazi:
+            return f"\n### 🔮 命理参考 (Target's Bazi) ###\n- {contact_id}的八字：{target_bazi}\n[要求] 可以结合对方的八字命理特征来分析其潜在性格和近期状态倾向。\n"
+        return ""
+
     def _get_user_profile(self) -> str:
         """获取用户本人的档案，用于辅助生成更贴合用户的策略"""
         user_profile_path = os.path.join("user_profile", "profile.md")
@@ -296,6 +330,7 @@ class SimpSkill(BaseSkill):
         template_text = self._clean_text(self.prompts.get(template_name, "你是一个情感分析专家。"))
         
         user_profile_text = self._get_user_profile()
+        bazi_context = self._get_bazi_info(contact_id)
         
         full_content = (
             f"Prompt Template:\n{template_text}\n\n"
@@ -305,7 +340,8 @@ class SimpSkill(BaseSkill):
             f"### 历史背景 (知识库检索) ###\n{kb_context}\n\n"
             f"### 当前记录/咨询 ###\n{chat_text}\n"
             f"{media_analysis}\n"
-            f"{social_analysis}"
+            f"{social_analysis}\n"
+            f"{bazi_context}"
         )
         
         messages = [HumanMessage(content=full_content)]

@@ -61,7 +61,23 @@ class AIAgent:
         # 1. 意图解析
         dispatch_info = self._get_dispatch_info(user_query)
         skill_name = dispatch_info.get("skill")
-        contact_id = dispatch_info.get("contact")
+        
+        # 处理 "None" 字符串或者真正的 None
+        contact_id = None
+        if "contact" in dispatch_info:
+            c = dispatch_info["contact"]
+            if c and isinstance(c, str) and c.strip().lower() != "none":
+                contact_id = c.strip()
+        
+        # 将联系人上下文保存到会话历史中
+        if not hasattr(self, "context"):
+            self.context = {}
+        if contact_id:
+            self.context["current_contact"] = contact_id
+        else:
+            # 继承上一次的联系人
+            contact_id = self.context.get("current_contact")
+            
         refined_query = dispatch_info.get("refined_query", user_query)
 
         if not skill_name or (skill_name not in self.skills and skill_name != "WechatSync"):
@@ -107,9 +123,9 @@ class AIAgent:
         
         system_prompt = f"""你是一个 AI Agent 的调度中心。你的任务是结合聊天历史，分析用户的最新输入，并将其拆解为结构化的 JSON。
 目前可用的 Skill：
-- SimpSkill: 情感分析、信号解读、追求策略、性格档案分析、回复建议。如果用户明确要求“更新档案”、“更新记录”，请将 refined_query 格式化为 `/simp update 姓名`。
+- SimpSkill: 情感分析、信号解读、追求策略、性格档案分析、回复建议。如果用户明确要求“更新档案”、“更新记录”，请将 refined_query 格式化为 `/simp update 姓名`。**注意：如果是用户在提供【自己/本人】的信息，请勿调用 SimpSkill 去更新别人档案，而是根据实际情况分发给 BaziSkill 或 NuwaSkill。**
 - NuwaSkill: 模拟特定人物的思维方式进行对话，或者提取“我本人”的画像。如果用户要求“总结我的聊天记录”、“提炼我的画像”、“总结我的部分”，请将 refined_query 格式化为 `/nuwa extract_user`。
-- BaziSkill: 八字排盘、命理分析、算命、测运势。
+- BaziSkill: 八字排盘、命理分析、算命、测运势。如果用户在提供“自己的生日/名字/出生时间”，这就是在提供算命信息，必须分发给 BaziSkill！
 - WechatSync: 获取最新的微信聊天记录。如果用户要求“从WeChat Realtime Sync更新最新聊天记录”或“拉取最新聊天记录”，请将 skill 设为 `WechatSync`，并提供联系人姓名。
 
 聊天历史（用于理解上下文代词如“他/她”、“这个”等）：
@@ -118,13 +134,15 @@ class AIAgent:
 输出 JSON 格式（必须输出合法的 JSON，不要附加多余文字）：
 {{
     "skill": "SimpSkill" 或 "NuwaSkill" 或 "BaziSkill" 或 "WechatSync" 或 null,
-    "contact": "识别到的联系人姓名(如果没有明确说明但上下文中存在，请继承上下文中的联系人) 或 null",
+    "contact": "识别到的联系人姓名(如果没有明确说明但上下文中存在，请继承上下文中的联系人)。如果是用户本人，必须填 'self' 或 null！",
     "refined_query": "补全代词和上下文后的具体问题或指令"
 }}
 
 示例：
 输入："帮我算一下张天岩的八字"
 输出：{{"skill": "BaziSkill", "contact": "张天岩", "refined_query": "帮我算一下张天岩的八字"}}
+输入："我的名字是赵允烨，出生时间是2006年3月3日14时"
+输出：{{"skill": "BaziSkill", "contact": "self", "refined_query": "我的名字是赵允烨，出生时间是2006年3月3日14时"}}
 历史：User: 分析张天岩最近的态度
 输入："如果明天约他看电影呢？"
 输出：{{"skill": "SimpSkill", "contact": "张天岩", "refined_query": "如果明天约张天岩看电影，有什么建议或策略？"}}
@@ -154,11 +172,15 @@ class AIAgent:
         """
         确保联系人档案存在。
         """
-        if skill_name not in self.skills:
+        if skill_name not in self.skills or not contact_id:
+            return
+            
+        # 如果是用户本人，跳过在 crushes 下创建档案
+        if contact_id == "user_profile" or contact_id == "self":
             return
 
         skill = self.skills[skill_name]
-        contact_slug = contact_id.lower().replace(" ", "_")
+        contact_slug = str(contact_id).lower().replace(" ", "_")
         profile_dir = os.path.join(self.crushes_path, contact_slug)
         profile_file = os.path.join(profile_dir, "profile.md")
 

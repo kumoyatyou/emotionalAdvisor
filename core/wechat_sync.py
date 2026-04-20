@@ -24,6 +24,9 @@ class WechatSync:
         self.running = True
         print(f"\n[*] Starting WeChat Realtime Sync listener at {self.sse_url}...")
         
+        retry_count = 0
+        max_retries = 5
+        
         while self.running:
             try:
                 # 使用 timeout=None 保持 SSE 长连接不断开
@@ -41,11 +44,18 @@ class WechatSync:
                     # 某些本地服务器返回的 SSE Header 不规范，可以通过 headers 强制声明或者捕获该错误后使用其他库
                     async with client.stream("GET", req_url, headers=headers) as response:
                         if response.status_code != 200:
-                            print(f"[!] WeChat Sync error: Server returned status {response.status_code}. Retrying in 5s...")
+                            retry_count += 1
+                            if retry_count > max_retries:
+                                print(f"\n[!] WeChat Sync error: Server returned status {response.status_code}.")
+                                print("[!] 已达到最大连续失败次数，自动降级为【手动模式】（停止自动同步）。\n[!] 请检查 WeFlow 服务及 .env 中的 Token 配置，或直接将聊天记录放入 data/raw/ 目录下。")
+                                self.running = False
+                                break
+                            print(f"[!] WeChat Sync error: Server returned status {response.status_code}. Retrying in 5s... ({retry_count}/{max_retries})")
                             await asyncio.sleep(5)
                             continue
                             
-                        # 如果第三方库 httpx-sse 强制校验 Header 失败，我们手动解析 SSE 流
+                        # 连接成功，重置重试计数器
+                        retry_count = 0
                         print("[*] WeChat Sync connected successfully! Listening for new messages...")
                         
                         buffer = ""
@@ -67,11 +77,23 @@ class WechatSync:
                                 except json.JSONDecodeError:
                                     continue
             except httpx.ConnectError:
-                print("[!] WeChat Sync: Connection refused. Is the API server running? (Retrying in 10s...)")
+                retry_count += 1
+                if retry_count > max_retries:
+                    print("\n[!] WeChat Sync: Connection refused. Is the API server running?")
+                    print("[!] 已达到最大连续失败次数，自动降级为【手动模式】（停止自动同步）。\n[!] 请检查 WeFlow 服务及端口，或直接将聊天记录放入 data/raw/ 目录下。")
+                    self.running = False
+                    break
+                print(f"[!] WeChat Sync: Connection refused. Is the API server running? Retrying in 10s... ({retry_count}/{max_retries})")
                 await asyncio.sleep(10)
             except Exception as e:
                 if self.running:
-                    print(f"[!] WeChat Sync error: {e}. Retrying in 5s...")
+                    retry_count += 1
+                    if retry_count > max_retries:
+                        print(f"\n[!] WeChat Sync error: {e}.")
+                        print("[!] 已达到最大连续失败次数，自动降级为【手动模式】（停止自动同步）。")
+                        self.running = False
+                        break
+                    print(f"[!] WeChat Sync error: {e}. Retrying in 5s... ({retry_count}/{max_retries})")
                     await asyncio.sleep(5)
 
     def stop(self):

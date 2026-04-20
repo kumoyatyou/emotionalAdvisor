@@ -156,10 +156,10 @@ class BaziSkill(BaseSkill):
 
     def _save_user_meta(self, meta: Dict[str, Any]):
         """保存用户本人的元数据"""
+        os.makedirs("user_profile", exist_ok=True)
         meta_path = os.path.join("user_profile", "meta.json")
-        if os.path.exists(meta_path):
-            with open(meta_path, "w", encoding="utf-8") as f:
-                json.dump(meta, f, indent=2, ensure_ascii=False)
+        with open(meta_path, "w", encoding="utf-8") as f:
+            json.dump(meta, f, indent=2, ensure_ascii=False)
 
     def run(self, data: Any, context: Dict[str, Any] = None) -> Any:
         contact_id = context.get("contact_id") if context else None
@@ -188,8 +188,7 @@ class BaziSkill(BaseSkill):
         # 尝试通过 LLM 提取用户当前输入中包含的八字信息，并自动更新到对应的 meta 中
         extract_prompt = f"""用户说："{user_query}"
 请判断用户是在提供谁的信息（是提供用户【本人】的信息，还是提供【目标人物 {contact_id if contact_id else 'ta'}】的信息）。
-然后提取其中包含的基本信息（如：阳历生日(solar_calendar)、农历生日(lunar_calendar)、出生时辰(birth_time)、性别(gender)、出生地(birth_place)等）。
-注意：请不要提取姓名（name）字段，因为系统已有记录。
+然后提取其中包含的基本信息（如：姓名(name)、阳历生日(solar_calendar)、农历生日(lunar_calendar)、出生时辰(birth_time)、性别(gender)、出生地(birth_place)等）。
 输出格式必须为 JSON：
 {{
   "target": "self" 或 "contact",
@@ -207,9 +206,6 @@ class BaziSkill(BaseSkill):
             new_info = parsed_res.get("info", {})
             
             if new_info:
-                if "name" in new_info:
-                    del new_info["name"]
-                    
                 if target == "self":
                     user_meta.update(new_info)
                     # 如果重新提供了时间，需要重新计算八字
@@ -230,6 +226,7 @@ class BaziSkill(BaseSkill):
             self._save_user_meta(user_meta)
 
         user_bazi_info = {
+            "name": user_meta.get("name", "用户本人"),
             "gender": user_meta.get("gender", ""),
             "solar_calendar": user_meta.get("solar_calendar", ""),
             "lunar_calendar": user_meta.get("lunar_calendar", ""),
