@@ -4,8 +4,6 @@ import time
 import requests
 from typing import Dict, Any, List
 from skills.base import BaseSkill
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import SystemMessage, HumanMessage
 
 class BaziSkill(BaseSkill):
     """
@@ -19,28 +17,35 @@ class BaziSkill(BaseSkill):
         )
         self.bazi_path = bazi_path
         self.crushes_path = crushes_path
-        
-        # 统一配置入口
-        from dotenv import load_dotenv
-        load_dotenv()
-        
-        self.api_key = os.getenv("OPENAI_API_KEY", "")
-        self.api_base = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
-        self.model_name = os.getenv("BAZI_MODEL", os.getenv("MODEL_NAME", "gpt-4o"))
-        
-        self.llm = ChatOpenAI(
-            model=self.model_name,
-            api_key=self.api_key,
-            base_url=self.api_base,
-            temperature=0.3
-        )
+        self._llm = None
         
         # 预加载参考文献
         self.references = self._load_references()
 
+    @property
+    def llm(self):
+        if self._llm is None:
+            # 统一配置入口
+            from dotenv import load_dotenv
+            load_dotenv()
+            
+            self.api_key = os.getenv("OPENAI_API_KEY", "")
+            self.api_base = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
+            self.model_name = os.getenv("BAZI_MODEL", os.getenv("MODEL_NAME", "gpt-4o"))
+            
+            from langchain_openai import ChatOpenAI
+            self._llm = ChatOpenAI(
+                model=self.model_name,
+                api_key=self.api_key,
+                base_url=self.api_base,
+                temperature=0.3
+            )
+        return self._llm
+
     def _call_llm(self, prompt: str) -> str:
         """调用大语言模型 API (via LangChain)"""
         try:
+            from langchain_core.messages import HumanMessage
             response = self.llm.invoke([HumanMessage(content=prompt)])
             content = response.content
             if isinstance(content, list):

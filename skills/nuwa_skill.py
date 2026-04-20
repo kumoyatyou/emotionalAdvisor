@@ -1,9 +1,7 @@
 import os
-import yaml
 import asyncio
 from typing import Any, Dict, List, Optional
 from skills.base import BaseSkill
-from langchain_openai import ChatOpenAI
 
 class NuwaSkill(BaseSkill):
     """
@@ -16,21 +14,26 @@ class NuwaSkill(BaseSkill):
         )
         self.nuwa_path = nuwa_path
         
-        # 统一配置入口
-        model_name = (os.getenv("NUWA_MODEL") or os.getenv("MODEL_NAME", "gpt-4o")).strip()
-        api_key = os.getenv("OPENAI_API_KEY")
-        base_url = os.getenv("OPENAI_API_BASE")
-        temperature = float(os.getenv("TEMPERATURE", 0.3)) # 思维模型建议低采样
-
-        self.llm = ChatOpenAI(
-            model=model_name,
-            openai_api_key=api_key,
-            openai_api_base=base_url,
-            temperature=temperature
-        )
+        self._llm = None
         self.personas: Dict[str, str] = {}
         self.contexts: Dict[str, List[Dict[str, str]]] = {}
         self._load_all_personas()
+
+    @property
+    def llm(self):
+        if self._llm is None:
+            from langchain_openai import ChatOpenAI
+            model_name = (os.getenv("NUWA_MODEL") or os.getenv("MODEL_NAME", "gpt-4o")).strip()
+            api_key = os.getenv("OPENAI_API_KEY")
+            base_url = os.getenv("OPENAI_API_BASE")
+            temperature = float(os.getenv("TEMPERATURE", 0.3)) # 思维模型建议低采样
+            self._llm = ChatOpenAI(
+                model=model_name,
+                openai_api_key=api_key,
+                openai_api_base=base_url,
+                temperature=temperature
+            )
+        return self._llm
 
     def _load_all_personas(self):
         """扫描 examples 目录并加载所有的思维模型（SKILL.md）"""

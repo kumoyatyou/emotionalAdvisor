@@ -1,36 +1,54 @@
 import os
 import time
 from typing import List, Any
-from langchain_openai import OpenAIEmbeddings
-from langchain_chroma import Chroma
 from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 class KnowledgeBase:
     """
     长期知识库管理类。负责数据的提纯、向量化存储和检索。
     """
     def __init__(self, persist_directory: str = "./db"):
-        # 从环境变量读取配置，支持自定义 API Base 和 Model
-        api_key = os.getenv("OPENAI_API_KEY")
-        base_url = os.getenv("OPENAI_API_BASE")
-        embedding_model = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
-
-        self.embeddings = OpenAIEmbeddings(
-            openai_api_key=api_key,
-            openai_api_base=base_url,
-            model=embedding_model,
-            chunk_size=50 # 强制设置底层 OpenAIClient 的分批大小为 50，解决 SiliconFlow 的 64 限制
-        )
         self.persist_directory = persist_directory
-        self.vector_db = Chroma(
-            persist_directory=persist_directory,
-            embedding_function=self.embeddings
-        )
-        self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200
-        )
+        self._embeddings = None
+        self._vector_db = None
+        self._text_splitter = None
+
+    @property
+    def embeddings(self):
+        if self._embeddings is None:
+            # 从环境变量读取配置，支持自定义 API Base 和 Model
+            api_key = os.getenv("OPENAI_API_KEY")
+            base_url = os.getenv("OPENAI_API_BASE")
+            embedding_model = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
+            
+            from langchain_openai import OpenAIEmbeddings
+            self._embeddings = OpenAIEmbeddings(
+                openai_api_key=api_key,
+                openai_api_base=base_url,
+                model=embedding_model,
+                chunk_size=50 # 强制设置底层 OpenAIClient 的分批大小为 50，解决 SiliconFlow 的 64 限制
+            )
+        return self._embeddings
+
+    @property
+    def vector_db(self):
+        if self._vector_db is None:
+            from langchain_chroma import Chroma
+            self._vector_db = Chroma(
+                persist_directory=self.persist_directory,
+                embedding_function=self.embeddings
+            )
+        return self._vector_db
+
+    @property
+    def text_splitter(self):
+        if self._text_splitter is None:
+            from langchain_text_splitters import RecursiveCharacterTextSplitter
+            self._text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=1000,
+                chunk_overlap=200
+            )
+        return self._text_splitter
 
     def add_data(self, raw_data: Any, contact_id: str = "default", purify: bool = True):
         """

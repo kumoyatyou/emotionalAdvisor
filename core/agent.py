@@ -1,11 +1,8 @@
 import os
 import json
-import ijson
 from typing import List, Dict, Any
 from core.knowledge_base import KnowledgeBase
 from skills.base import BaseSkill
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import SystemMessage, HumanMessage
 
 class AIAgent:
     """
@@ -13,7 +10,8 @@ class AIAgent:
     具备自然语言意图分发能力。
     """
     def __init__(self, kb_path: str = "./db", crushes_path: str = "./crushes"):
-        self.kb = KnowledgeBase(persist_directory=kb_path)
+        self.kb_path = kb_path
+        self._kb = None
         self.crushes_path = crushes_path
         self.registry_path = os.path.join(self.crushes_path, "processed_files.json")
         self.processed_files = self._load_registry()
@@ -21,17 +19,29 @@ class AIAgent:
         if not os.path.exists(self.crushes_path):
             os.makedirs(self.crushes_path)
         
-        # 用于意图分发的 LLM
-        self.dispatcher_llm = ChatOpenAI(
-            model=os.getenv("MODEL_NAME", "gpt-4o"),
-            openai_api_key=os.getenv("OPENAI_API_KEY"),
-            openai_api_base=os.getenv("OPENAI_API_BASE"),
-            temperature=0.01 # 有些模型不支持绝对 0，设置为 0.01 保证兼容
-        )
+        self._dispatcher_llm = None
         
         # 聊天历史记录，用于保持上下文
         self.chat_history = []
         self.max_history = 5
+
+    @property
+    def kb(self):
+        if self._kb is None:
+            self._kb = KnowledgeBase(persist_directory=self.kb_path)
+        return self._kb
+
+    @property
+    def dispatcher_llm(self):
+        if self._dispatcher_llm is None:
+            from langchain_openai import ChatOpenAI
+            self._dispatcher_llm = ChatOpenAI(
+                model=os.getenv("MODEL_NAME", "gpt-4o"),
+                openai_api_key=os.getenv("OPENAI_API_KEY"),
+                openai_api_base=os.getenv("OPENAI_API_BASE"),
+                temperature=0.01 # 有些模型不支持绝对 0，设置为 0.01 保证兼容
+            )
+        return self._dispatcher_llm
 
     def _load_registry(self) -> Dict[str, float]:
         if os.path.exists(self.registry_path):
@@ -119,6 +129,7 @@ class AIAgent:
         """
         通过 LLM 拆解用户需求，结合上下文提取 Skill、联系人和具体问题。
         """
+        from langchain_core.messages import SystemMessage, HumanMessage
         history_text = "\n".join([f"{msg['role']}: {msg['content']}" for msg in self.chat_history])
         
         system_prompt = f"""你是一个 AI Agent 的调度中心。你的任务是结合聊天历史，分析用户的最新输入，并将其拆解为结构化的 JSON。
@@ -223,6 +234,8 @@ class AIAgent:
                     try:
                         contact_id = "default"
                         media_root = os.path.join(root, "media")
+                        
+                        import ijson
                         
                         # 先尝试用 ijson 提取 session 信息，避免加载整个大文件进内存
                         try:

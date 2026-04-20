@@ -20,7 +20,7 @@ async def interactive_chat(agent: AIAgent):
     print("您可以输入指令，如：")
     print("- '用 Naval 的视角建议我如何处理这段关系'")
     print("- '分析一下xxx最近的态度'")
-    print("- 'xxx最近在忙什么？'")
+    print("- '结合我和xxx的八字算一下今天的接触策略'")
     print("- '给我一个今天的每日建议吧'")
     print("- '退出' 结束对话")
     print("="*30 + "\n")

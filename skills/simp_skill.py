@@ -3,9 +3,6 @@ import sys
 import time
 from typing import Any, Dict, List, Optional
 from skills.base import BaseSkill
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import PromptTemplate
-from langchain_core.messages import HumanMessage
 
 class SimpSkill(BaseSkill):
     """
@@ -19,26 +16,31 @@ class SimpSkill(BaseSkill):
         )
         self.path = simp_skill_path
         self.crushes_path = crushes_path
-        
-        # 统一配置入口：清理模型名称中的空格
-        self.model_name = (os.getenv("SIMP_MODEL") or os.getenv("MODEL_NAME", "gpt-4o")).strip()
-        self.api_key = os.getenv("OPENAI_API_KEY")
-        self.base_url = os.getenv("OPENAI_API_BASE")
-        self.temperature = float(os.getenv("TEMPERATURE", 0.7))
-
-        self.llm = ChatOpenAI(
-            model=self.model_name,
-            openai_api_key=self.api_key,
-            openai_api_base=self.base_url,
-            temperature=self.temperature,
-            max_retries=2
-        )
+        self._llm = None
         self.prompts = self._load_prompts()
         
         # 将 simp-skill 的 tools 目录加入系统路径，以便调用其中的解析器
         self.tools_path = os.path.join(self.path, "tools")
         if self.tools_path not in sys.path:
             sys.path.insert(0, self.tools_path)
+
+    @property
+    def llm(self):
+        if self._llm is None:
+            from langchain_openai import ChatOpenAI
+            self.model_name = (os.getenv("SIMP_MODEL") or os.getenv("MODEL_NAME", "gpt-4o")).strip()
+            self.api_key = os.getenv("OPENAI_API_KEY")
+            self.base_url = os.getenv("OPENAI_API_BASE")
+            self.temperature = float(os.getenv("TEMPERATURE", 0.7))
+
+            self._llm = ChatOpenAI(
+                model=self.model_name,
+                openai_api_key=self.api_key,
+                openai_api_base=self.base_url,
+                temperature=self.temperature,
+                max_retries=2
+            )
+        return self._llm
 
     def _call_llm_robust(self, messages: List[Any]) -> str:
         """健壮的 LLM 调用，如果 LangChain 失败，尝试极简原生调用"""
@@ -106,6 +108,7 @@ class SimpSkill(BaseSkill):
                 
                 template = self.prompts.get("intake", "初始化档案...")
                 prompt = f"{template}\n\n请为目标人物 {name} 创建初始档案大纲。"
+                from langchain_core.messages import HumanMessage
                 content = self._call_llm_robust([HumanMessage(content=prompt)])
                 
                 with open(paths["profile"], "w", encoding="utf-8") as f:
@@ -140,6 +143,7 @@ class SimpSkill(BaseSkill):
                 f"请结合最新的聊天记录，对上述档案进行更新。保持原有格式不变，只修改或补充其中的信息。注意：务必包含最新的时间节点。"
             )
             
+            from langchain_core.messages import HumanMessage
             updated_content = self._call_llm_robust([HumanMessage(content=prompt)])
             
             with open(paths["profile"], "w", encoding="utf-8") as f:
@@ -332,8 +336,14 @@ class SimpSkill(BaseSkill):
         user_profile_text = self._get_user_profile()
         bazi_context = self._get_bazi_info(contact_id)
         
+        from datetime import datetime
+        now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        current_date_str = datetime.now().strftime('%Y-%m-%d')
+        
         full_content = (
             f"Prompt Template:\n{template_text}\n\n"
+            f"### 系统信息 ###\n"
+            f"今天是: {current_date_str}\n\n"
             f"### 【用户本人画像】（请在生成策略和话术时，务必贴合用户的性格、沟通风格和优劣势） ###\n{user_profile_text}\n\n"
             f"### 分析对象: {contact_id} ###\n\n"
             f"### {contact_id} 的长期档案 (已提纯) ###\n{profile_content if profile_content else '暂无档案'}\n\n"
@@ -344,6 +354,7 @@ class SimpSkill(BaseSkill):
             f"{bazi_context}"
         )
         
+        from langchain_core.messages import HumanMessage
         messages = [HumanMessage(content=full_content)]
         if not silent:
             print(f"--- SimpSkill: Analyzing '{contact_id}' (Length: {len(full_content)}) ---")
@@ -354,8 +365,6 @@ class SimpSkill(BaseSkill):
         if template_name == "strategy_builder" and contact_id != "Unknown" and not silent:
             try:
                 strategy_path = paths["strategy"]
-                from datetime import datetime
-                now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 with open(strategy_path, "a", encoding="utf-8") as f:
                     f.write(f"\n\n## 📅 {now_str} 咨询记录\n")
                     if isinstance(data, str):
