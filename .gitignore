@@ -16,9 +16,11 @@ __pycache__/
 .env.*.local
 
 # Project Data (Private/Sensitive)
-data/
+data/raw/*
+!data/raw/.gitkeep
 db/
 crushes/
+user_profile/
 
 # IDE & OS Files
 .vscode/
