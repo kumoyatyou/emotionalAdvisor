@@ -4,12 +4,20 @@
 
 ---
 
+## 📖 写在前面
+
+在这个世界里，我似乎总是扮演着“旁观者清”的军师角色——每当朋友带着感情的伤痕来找我，我总能冷静地为他们剖析利弊、指点迷津。可一旦成为故事里的主角，我就成了那个最笨拙、最无可救药的小丑，在自己的感情里一败涂地，医者始终无法自医。
+
+无数个复盘失败经历的深夜里，我萌生了做这个 Agent 的念头。我将 GitHub 上众多优秀的开源思维模型与分析技能（Skills）汇聚于此，试图用算法的理智，去填补我们在爱情中容易盲目和冲动的缺陷。
+
+我敲下这些代码，不仅仅是为了打造一个工具，更是为了传递一份微光的祝愿：希望它能为你提供最清醒的视角和最妥帖的建议。愿你在爱里能拥有智慧与底气，去拥抱真正对的人，永远不必像我一样，成为那个在回忆里独自苦笑的“小丑”。
+
 ## ✨ 核心特性
 
 - 🤖 **多技能调度架构 (Multi-Skill Agent)**
   - 内置自然语言意图分发系统，自动将你的需求派发给最合适的专有技能（Skill）。
   - **SimpSkill (情感军师)**：基于历史聊天数据，分析对方的情绪状态、捕捉潜在信号、生成专属的破冰或暧昧期回复话术。
-  - **NuwaSkill (女娲思维模拟)**：加载特定名人的思维模型（如 Naval、马斯克等），为你提供高阶的认知视角的决策建议。
+  - **NuwaSkill (思维模拟)**：加载特定名人的思维模型（如 Naval、马斯克等），为你提供高阶的认知视角的决策建议。
   - **BaziSkill (命理辅助)**：基于四柱八字的性格及运势推演插件。
 - 🔄 **微信无缝实时同步**
   - 原生适配 [WeFlow](https://github.com/weflow-app/weflow) 的本地 HTTP API 和 SSE 推送接口。
@@ -26,11 +34,19 @@
 ## 🚀 快速开始
 
 ### 1. 环境准备
+
+**1. 安装并配置 WeFlow（核心数据源）**
+本项目依赖 WeFlow 实时获取本地微信聊天记录。请先完成以下准备工作：
+- 前往 [WeFlow Releases](https://github.com/hicccc77/WeFlow/releases) 下载并安装适用于你操作系统的版本。
+- 登录微信后打开 WeFlow 客户端，依次点击 **设置 → API 服务 → 启动服务**，启用本地 HTTP API。
+- 默认服务地址为 `http://127.0.0.1:5031`，请确保服务已正常启动。
+
+**2. 准备 Python 环境**
 确保你已安装 Python 3.10 或更高版本。
 
 ```bash
 # 克隆仓库
-git clone https://github.com/your-username/emotionalAdvisor.git
+git clone https://github.com/kumoyatyou/emotionalAdvisor.git
 cd emotionalAdvisor
 
 # 安装依赖
@@ -117,6 +133,19 @@ emotionalAdvisor/
 
 ---
 
-## 📄 许可证 (License)
+## � 致谢与声明 (Acknowledgements)
+
+本项目在开发过程中，深受开源社区的启发，并直接参考或集成了以下优秀的开源项目及理念，特此致谢。我们在使用和借鉴这些项目时，严格遵守了它们各自的开源许可协议：
+
+- **[simp-skill](https://github.com/BeamusWayne/simp-skill)**: 提供了核心的情感分析逻辑，包括信号解读、情话生成、破冰策略与危机处理框架。
+- **[nuwa-skill](https://github.com/alchaincyf/nuwa-skill)**: 提供了人物思维方式蒸馏和认知框架提取的设计思路，用于构建高阶认知视角的决策模拟。
+- **[bazi-skill](https://github.com/jinchenma94/bazi-skill)**: 提供了四柱八字排盘与传统命理分析的实现参考。
+- **[WeFlow](https://github.com/hicccc77/WeFlow)**: 提供了本地微信聊天记录获取与导出的技术基础，本项目原生适配了其 HTTP API 和实时消息推送能力。
+
+*声明：以上引用项目的核心代码、设计思路及衍生功能均归原作者所有。本项目在借鉴和集成时均遵循原项目的开源许可要求。如涉及具体项目的源码复用或二次分发，请使用者同样遵守原项目的 License 规定。*
+
+---
+
+## �� 许可证 (License)
 
 本项目采用 MIT 许可证。详见 [LICENSE](LICENSE) 文件。
