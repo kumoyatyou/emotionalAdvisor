@@ -104,7 +104,9 @@ class AIAgent:
 
         # 2. 自动处理档案（如果是针对特定联系人）
         if contact_id:
-            self.ensure_contact_profile(contact_id, "SimpSkill" if skill_name == "MultiSkill" else skill_name)
+            # 如果指令本身就是明确创建/更新档案，跳过自动确保机制，直接交由 Skill 处理
+            if not (isinstance(refined_query, str) and (refined_query.startswith("/simp create ") or refined_query.startswith("/simp update "))):
+                self.ensure_contact_profile(contact_id, "SimpSkill" if skill_name == "MultiSkill" else skill_name)
 
         # 3. 调用 Skill
         print(f"[*] Dispatching to {skill_name} for contact '{contact_id}'...")
@@ -182,7 +184,7 @@ class AIAgent:
         
         system_prompt = f"""你是一个 AI Agent 的调度中心。你的任务是结合聊天历史，分析用户的最新输入，并将其拆解为结构化的 JSON。
 目前可用的 Skill：
-- SimpSkill: 情感分析、信号解读、追求策略、性格档案分析、回复建议。如果用户明确要求“更新档案”、“更新记录”，请将 refined_query 格式化为 `/simp update 姓名`。**注意：如果是用户在提供【自己/本人】的信息，请勿调用 SimpSkill 去更新别人档案，而是根据实际情况分发给 BaziSkill 或 NuwaSkill。**
+- SimpSkill: 情感分析、信号解读、追求策略、性格档案分析、回复建议。如果用户明确要求“创建档案”、“新建档案”，请将 refined_query 格式化为 `/simp create 姓名`。如果用户明确要求“更新档案”、“更新记录”，请将 refined_query 格式化为 `/simp update 姓名`。**注意：如果是用户在提供【自己/本人】的信息，请勿调用 SimpSkill 去更新别人档案，而是根据实际情况分发给 BaziSkill 或 NuwaSkill。**
 - NuwaSkill: 模拟特定人物的思维方式进行对话，或者提取“我本人”的画像。如果用户要求“总结我的聊天记录”、“提炼我的画像”、“总结我的部分”，请将 refined_query 格式化为 `/nuwa extract_user`。
 - BaziSkill: 八字排盘、命理分析、算命、测运势。如果用户在提供“自己的生日/名字/出生时间”，这就是在提供算命信息，必须分发给 BaziSkill！注意：如果是“结合八字分析策略”，请分发给 MultiSkill。
 - MultiSkill: 需要同时结合【八字命理】和【聊天心理学分析/策略】的综合请求。
@@ -199,6 +201,8 @@ class AIAgent:
 }}
 
 示例：
+输入："帮我建一个李雷的档案"
+输出：{{"skill": "SimpSkill", "contact": "李雷", "refined_query": "/simp create 李雷"}}
 输入："帮我算一下张天岩的八字"
 输出：{{"skill": "BaziSkill", "contact": "张天岩", "refined_query": "帮我算一下张天岩的八字"}}
 输入："我的名字是赵允烨，出生时间是2006年3月3日14时"

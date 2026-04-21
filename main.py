@@ -18,6 +18,7 @@ async def interactive_chat(agent: AIAgent):
     print("\n" + "="*30)
     print("AI 情感军师 Agent 已启动")
     print("您可以输入指令，如：")
+    print("- '帮我建一个xxx的档案' (创建档案)")
     print("- '用 Naval 的视角建议我如何处理这段关系'")
     print("- '分析一下xxx最近的态度'")
     print("- '结合我和xxx的八字算一下今天的接触策略'")

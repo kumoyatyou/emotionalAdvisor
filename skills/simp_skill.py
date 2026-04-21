@@ -68,12 +68,12 @@ class SimpSkill(BaseSkill):
                 with open(paths["meta"], "w", encoding="utf-8") as f:
                     json.dump(meta, f, indent=2, ensure_ascii=False)
                     
-                return f"Successfully created profile for {name}."
-            return f"Profile for {name} already exists."
+                return f"已成功为 {name} 创建档案。"
+            return f"{name} 的档案已存在。"
 
         elif cmd == "update":
             if not os.path.exists(paths["profile"]):
-                return f"Profile for {name} does not exist. Please create it first."
+                return f"{name} 的档案不存在，请先创建。"
             
             if not silent: print(f"[*] Updating profile for {name}...")
             
@@ -109,9 +109,9 @@ class SimpSkill(BaseSkill):
                         json.dump(meta, f, indent=2, ensure_ascii=False)
                 except Exception: pass
                 
-            return f"Successfully updated profile for {name}."
+            return f"已成功更新 {name} 的档案。"
         
-        return f"Unknown command: {cmd}"
+        return f"未知指令: {cmd}"
 
     def _clean_text(self, text: str) -> str:
         if not text: return ""
