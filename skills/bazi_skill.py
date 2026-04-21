@@ -143,12 +143,23 @@ class BaziSkill(BaseSkill):
         user_query = data if isinstance(data, str) else str(data)
         
         from datetime import datetime
-        current_date = datetime.now().strftime("%Y年%m月%d日 %H:%M")
+        now = datetime.now()
+        current_date = now.strftime("%Y年%m月%d日 %H:%M")
+        
+        try:
+            from lunar_python import Solar
+            solar_now = Solar.fromYmdHms(now.year, now.month, now.day, now.hour, now.minute, now.second)
+            lunar_now = solar_now.getLunar()
+            bazi_now = lunar_now.getEightChar()
+            current_bazi = f"{bazi_now.getYear()} {bazi_now.getMonth()} {bazi_now.getDay()} {bazi_now.getTime()}"
+        except Exception as e:
+            current_bazi = "未知"
+            print(f"[!] 获取今日排盘失败: {e}")
         
         system_prompt = f"""你是一个专业的中国传统四柱八字命理分析师。
 你需要根据用户提供的生辰八字信息进行排盘和命理分析。
 
-【当前系统时间】：{current_date} (请在计算大运、流年、今年运势等与时间相关的内容时，严格以此时刻为基准)
+【当前系统时间】：{current_date} (今日八字排盘为：{current_bazi}。请在计算大运、流年、今日运势等与时间相关的内容时，严格以该排盘为基准)
 
 【你的参考知识库】
 {self.references[:4000]}... (由于长度限制截断，请基于你内置的八字命理知识进行分析)

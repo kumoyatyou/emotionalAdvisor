@@ -65,10 +65,14 @@ async def async_main():
     agent.register_skill(bazi_skill)
 
     # 4. 自动同步原始数据 (增量且静默处理，不输出分析结果)
-    print("\n[*] Synchronizing new data (Silent Mode)...")
+    print("\n[*] Synchronizing new data (Silent Mode) in background...")
     raw_data_dir = "./data/raw"
+    sync_folder_task = None
     if os.path.exists(raw_data_dir):
-        await asyncio.to_thread(agent.process_folder, raw_data_dir, "SimpSkill", True)
+        # 放在后台异步执行，不阻塞主流程
+        sync_folder_task = asyncio.create_task(
+            asyncio.to_thread(agent.process_folder, raw_data_dir, "SimpSkill", True)
+        )
 
     # 5. 启动微信实时同步服务
     try:
@@ -83,6 +87,9 @@ async def async_main():
     # 6. 进入交互模式
     await interactive_chat(agent)
     
+    if sync_folder_task and not sync_folder_task.done():
+        sync_folder_task.cancel()
+
     if 'sync_service' in locals():
         sync_service.stop()
         if not sync_task.done():
