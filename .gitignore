@@ -37,3 +37,5 @@ build/
 dist/
 *.spec
 build.bat
+build.ps1
+build.log
