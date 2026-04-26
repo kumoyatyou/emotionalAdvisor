@@ -24,6 +24,19 @@ class AIAgent:
         # 聊天历史记录，用于保持上下文
         self.chat_history = []
         self.max_history = 5
+        
+        # 回调机制，用于前端实时显示思考过程
+        self.thought_callback = None
+
+    def set_thought_callback(self, callback):
+        self.thought_callback = callback
+
+    def _emit_thought(self, message: str):
+        if self.thought_callback:
+            try:
+                self.thought_callback(message)
+            except Exception as e:
+                print(f"[!] Error emitting thought: {e}")
 
     @property
     def kb(self):
@@ -68,6 +81,7 @@ class AIAgent:
         处理用户的自然语言指令，拆解需求并调用相关 Skill。
         """
         print(f"[*] Thinking about your request: '{user_query}'...")
+        self._emit_thought("正在理解意图并分析上下文...")
         
         # 1. 意图解析
         dispatch_info = self._get_dispatch_info(user_query)
@@ -100,23 +114,30 @@ class AIAgent:
             if "分析" in user_query or "怎么样" in user_query:
                 skill_name = "SimpSkill"
             else:
+                self._emit_thought("思考完成")
                 return f"抱歉，我还没学会处理这个需求的技能。目前我擅长分析联系人和模拟对话。"
 
         # 2. 自动处理档案（如果是针对特定联系人）
         if contact_id:
+            self._emit_thought(f"正在检查/准备 '{contact_id}' 的档案...")
             # 如果指令本身就是明确创建/更新档案，跳过自动确保机制，直接交由 Skill 处理
             if not (isinstance(refined_query, str) and (refined_query.startswith("/simp create ") or refined_query.startswith("/simp update "))):
                 self.ensure_contact_profile(contact_id, "SimpSkill" if skill_name == "MultiSkill" else skill_name)
 
         # 3. 调用 Skill
         print(f"[*] Dispatching to {skill_name} for contact '{contact_id}'...")
+        self._emit_thought(f"正在调用专家技能: {skill_name} ...")
+        
         if skill_name == "WechatSync":
             response_text = await self._handle_wechat_sync_query(refined_query, contact_id)
         elif skill_name == "MultiSkill":
             response_text = await self._handle_multi_skill_query(refined_query, contact_id)
         else:
+            # Check if skill requires async call (e.g. some Nuwa operations)
+            # Run directly since run_skill_directly is synchronous for most skills right now
             response_text = self.run_skill_directly(skill_name, refined_query, contact_id=contact_id)
         
+        self._emit_thought("思考完成，正在生成最终回复...")
         # 记录 AI 的回答，以便下一次意图分发时理解上下文
         self.chat_history.append({"role": "Assistant", "content": response_text[:200] + "..." if len(response_text) > 200 else response_text})
         

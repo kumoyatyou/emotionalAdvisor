@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI 情感军师</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Include marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Main Chat Area -->
+        <main class="chat-area">
+            <header class="chat-header">
+                <div class="header-info">
+                    <h1>AI 情感军师 Agent</h1>
+                    <span class="status-indicator">● 在线</span>
+                </div>
+                <div class="header-actions">
+                    <button id="clear-btn" class="icon-btn" title="清空对话">🗑️</button>
+                </div>
+            </header>
+
+            <div id="messages-container" class="messages-container">
+                <div class="welcome-container">
+                    <div class="welcome-logo">🤖</div>
+                    <h2>欢迎来到情感军师</h2>
+                    <p class="welcome-subtitle">选择下方建议或直接输入，开启咨询</p>
+                    <div class="suggestion-chips">
+                        <button class="chip" onclick="fillInput('帮我建一个名为 xxx 的档案')">👤 帮我建一个名为 xxx 的档案</button>
+                        <button class="chip" onclick="fillInput('用 Naval 的视角建议我如何处理这段关系')">💡 用 Naval 的视角建议我如何处理这段关系</button>
+                        <button class="chip" onclick="fillInput('分析一下 xxx 最近的态度')">🔍 分析一下 xxx 最近的态度</button>
+                        <button class="chip" onclick="fillInput('结合八字算一下今天和 xxx 的接触策略')">🔮 结合八字算一下今天和 xxx 的接触策略</button>
+                        <button class="chip" onclick="fillInput('给我一个今天的每日建议吧')">📅 给我一个今天的每日建议吧</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <textarea id="chat-input" placeholder="输入你想咨询的内容，按 Enter 发送..."></textarea>
+                    <button id="send-btn" class="send-btn">
+                        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+</html>
