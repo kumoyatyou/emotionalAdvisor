@@ -31,3 +31,9 @@ Thumbs.db
 # Debug & Logs
 *.log
 debug_native_payload.json
+
+# PyInstaller
+build/
+dist/
+*.spec
+build.bat

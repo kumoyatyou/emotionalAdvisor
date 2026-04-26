@@ -138,7 +138,8 @@ class WechatSync:
         }
 
         # 保存到 data/raw/realtime 目录，作为增量备份
-        realtime_dir = "./data/raw/realtime"
+        data_dir = os.path.dirname(self.agent.crushes_path)
+        realtime_dir = os.path.join(data_dir, "data", "raw", "realtime")
         os.makedirs(realtime_dir, exist_ok=True)
         file_path = os.path.join(realtime_dir, f"私聊_{contact_id}.json")
         
@@ -221,7 +222,8 @@ class WechatSync:
                         print(f"[*] Resolved '{contact_id}' to wxid: {wxid}")
 
                 # 2. 读取本地记录获取最后更新时间，用于增量拉取
-                realtime_dir = "./data/raw/realtime"
+                data_dir = os.path.dirname(self.agent.crushes_path)
+                realtime_dir = os.path.join(data_dir, "data", "raw", "realtime")
                 os.makedirs(realtime_dir, exist_ok=True)
                 file_path = os.path.join(realtime_dir, f"私聊_{contact_id}.json")
                 
