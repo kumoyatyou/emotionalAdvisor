@@ -1,0 +1,17 @@
+langchain
+langchain-openai
+langchain-community
+langchain-chroma
+chromadb
+pydantic
+python-dotenv
+tiktoken
+fastapi
+uvicorn
+sse-starlette
+httpx
+ijson
+lunar-python
+rich
+requests
+openai
