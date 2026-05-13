@@ -4,7 +4,17 @@
 
 它把微信聊天记录、RAG 知识库、联系人档案、思维模拟和八字分析整合到同一个项目里，既支持命令行交互，也支持本地浏览器 GUI。项目启动后可以自动监听 WeFlow 的实时消息推送，也可以手动导入历史聊天 JSON 进行增量建档和分析。
 
+## 🎉 特别鸣谢
+
+本项目的诞生和完善，离不开公众号 **[不言胡侃]** 博主 **王不言** 的大力支持与优质文章启发。
+强烈推荐大家关注他的公众号，获取更多关于 AI 与情感思考的硬核内容！
+
+<img src="./assets/微信图片_20260513203939_982_38.jpg" alt="不言胡侃" width="200" />
+
 ## 📖 写在前面
+
+> 👶 **新手/小白用户请注意**：如果你是第一次接触此类本地部署的 AI 项目，不知道从何下手，请直接点击查看这篇保姆级教程：
+> 👉 **[小白专属：从零到一全流程使用指南](./QUICK_START.md)**
 
 在这个世界里，我似乎总是扮演着“旁观者清”的军师角色——每当朋友带着感情的伤痕来找我，我总能冷静地为他们剖析利弊、指点迷津。可一旦成为故事里的主角，我就成了那个最笨拙、最无可救药的小丑，在自己的感情里一败涂地，医者始终无法自医。
 
@@ -39,23 +49,10 @@
 
 负责思维模拟和认知视角切换，当前会从 `skills/nuwa-skill/examples/` 自动加载预置人格。
 
-仓库里目前已有 15 个示例人格/视角，包括：
-
-- `naval`
-- `elon-musk`
-- `feynman`
-- `steve-jobs`
-- `paul-graham`
-- `andrej-karpathy`
-- `taleb`
-- `munger`
-- `trump`
-- `zhang-yiming`
-- `zhangxuefeng`
-- `ilya-sutskever`
-- `mrbeast`
-- `sun-yuchen`
-- `x-mastery-mentor`
+仓库里目前已有 15+ 个示例人格/视角，包括：
+- `naval`、`elon-musk`、`feynman`、`steve-jobs` 等硅谷/学术巨佬
+- `taleb`、`munger` 等投资与哲学大师
+- `zhangxuefeng`、`sun-yuchen` 等极具现实主义色彩的中文视角
 
 另外它还支持通过 `/nuwa extract_user` 从已有联系人档案中提炼你的本人画像，输出到 `user_profile/profile.md`。
 
@@ -151,86 +148,25 @@ pip install -r requirements.txt
 
 ## ⚙️ 配置 `.env`
 
-项目根目录提供了 `.env.example` 模板，也可以直接运行 `python launcher.py` 让程序交互式生成。
+项目启动需要依赖大模型 API（如 Kimi、DeepSeek 等）。如果你不知道如何配置或者想找一套最省钱的方案：
+> 📘 **强烈推荐阅读：[环境变量 (.env) 高阶与性价比配置指南](./ENV_CONFIG_GUIDE.md)**
 
-一个和当前代码匹配的配置示例如下：
+基础操作只需两步：
+1. 复制 `.env.example` 为 `.env`
+2. 填入你的 `OPENAI_API_KEY` 和 `MODEL_NAME` 即可。
 
-```env
-# ==========================================
-# Core LLM Configuration
-# ==========================================
-OPENAI_API_KEY=your_api_key_here
-OPENAI_API_BASE=https://api.openai.com/v1
-MODEL_NAME=gpt-4o
-TEMPERATURE=0.7
+---
 
-# ==========================================
-# Skill-specific Models
-# 留空则继承 MODEL_NAME
-# ==========================================
-SIMP_MODEL=
-NUWA_MODEL=
-BAZI_MODEL=
+## 🔗 数据接入 (WeFlow & 聊天记录)
 
-# ==========================================
-# RAG & Storage
-# ==========================================
-EMBEDDING_MODEL=text-embedding-3-small
-DB_PERSIST_PATH=./db
+项目支持两种获取微信数据的方式：
 
-# ==========================================
-# WeChat Sync
-# ==========================================
-WECHAT_SYNC_URL=http://127.0.0.1:5031/api/v1/push/messages
-WECHAT_SYNC_TOKEN=your_weflow_token_here
-```
+1. **历史聊天导入（推荐小白首选）**：通过 WeFlow 导出 JSON 格式的历史记录放入 `data/raw/` 目录，Agent 会自动扫描建档。
+2. **实时同步监听（高阶玩家）**：配置好 `.env` 中的 Token，Agent 将在后台实时监听 WeFlow 推送的新消息。
 
-### 📝 配置说明
-
-- `OPENAI_API_KEY`：你的模型服务密钥
-- `OPENAI_API_BASE`：OpenAI 兼容接口地址，也可以换成其他供应商或本地中转
-- `MODEL_NAME`：默认主模型
-- `TEMPERATURE`：默认温度
-- `SIMP_MODEL` / `NUWA_MODEL` / `BAZI_MODEL`：按技能单独覆写模型
-- `EMBEDDING_MODEL`：向量模型名称
-- `DB_PERSIST_PATH`：Chroma 数据库存储路径
-- `WECHAT_SYNC_URL`：WeFlow SSE 地址
-- `WECHAT_SYNC_TOKEN`：WeFlow Token，不填时实时同步大概率不可用
-
-## 🔗 WeFlow 接入
-
-项目内已经附带一份 [HTTP-API.md](./HTTP-API.md) 作为 WeFlow 接口说明，当前接入逻辑依赖它的本地 HTTP API 和 SSE 推送能力。
-
-### 基本步骤
-
-1. 安装并启动 WeFlow。
-2. 在 WeFlow 中开启 `API 服务`。
-3. 如需实时监听，再开启 `主动推送`。
-4. 记录 Token，填入 `.env` 中的 `WECHAT_SYNC_TOKEN`。
-5. 默认基础地址通常是 `http://127.0.0.1:5031`。
-
-### 降级行为
-
-如果 WeFlow 没有启动、端口不通或 Token 配置错误，项目会在多次重试后自动降级为手动模式。你仍然可以把历史聊天记录放进 `data/raw/`，继续使用建档与分析功能。
-
-## 📥 历史聊天导入
-
-首次使用时，强烈建议先导入历史聊天记录，再进行问答。
-
-### 推荐流程
-
-1. 用 WeFlow 导出目标联系人的聊天记录，格式选择 JSON。
-2. 把导出的文件放进 `data/raw/`。
-3. 启动 `main.py` 或 `gui_main.py`。
-4. 程序会自动增量处理新增 JSON，写入向量库并更新联系人档案。
-
-### 实时同步文件位置
-
-实时监听到的新消息会额外备份到：
-
-```text
-data/raw/realtime/
-```
+> 📖 **关于数据的详细操作教程，请参考：**
+> - 快速导入聊天记录：[小白专属：从零到一全流程使用指南](./QUICK_START.md#第三步准备微信聊天记录给-agent-喂数据)
+> - 接口与实时推送开发：[WeFlow HTTP API 接入文档](./HTTP-API.md)
 
 ## 💡 使用示例
 
